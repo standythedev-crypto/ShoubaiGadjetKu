@@ -20,6 +20,8 @@ db.exec(`
     image TEXT NOT NULL,
     condition TEXT NOT NULL,
     description TEXT NOT NULL,
+    specs TEXT,
+    stock INTEGER DEFAULT 0,
     isFeatured INTEGER DEFAULT 0
   );
 
@@ -54,20 +56,35 @@ async function startServer() {
 
   // API routes
   app.get("/api/products", (req, res) => {
-    const products = db.prepare("SELECT * FROM products ORDER BY name").all();
-    res.json(products);
+    const products = db.prepare("SELECT * FROM products ORDER BY name").all() as any[];
+    res.json(products.map(p => ({
+      ...p,
+      specs: p.specs ? JSON.parse(p.specs) : undefined,
+      isFeatured: !!p.isFeatured
+    })));
   });
 
   app.post("/api/products/seed", (req, res) => {
     const products = req.body;
     const insert = db.prepare(`
-      INSERT OR REPLACE INTO products (id, name, price, category, image, condition, description, isFeatured)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT OR REPLACE INTO products (id, name, price, category, image, condition, description, specs, stock, isFeatured)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const transaction = db.transaction((items) => {
       for (const item of items) {
-        insert.run(item.id, item.name, item.price, item.category, item.image, item.condition, item.description, item.isFeatured ? 1 : 0);
+        insert.run(
+          item.id, 
+          item.name, 
+          item.price, 
+          item.category, 
+          item.image, 
+          item.condition, 
+          item.description, 
+          item.specs ? JSON.stringify(item.specs) : null,
+          item.stock || 0,
+          item.isFeatured ? 1 : 0
+        );
       }
     });
 
@@ -115,8 +132,48 @@ async function startServer() {
 
   app.patch("/api/sell-requests/:id", (req, res) => {
     const { status } = req.body;
-    db.prepare("UPDATE sellRequests SET status = ? WHERE id = ?").run(status, req.params.id);
-    res.json({ status: "ok" });
+    const id = req.params.id;
+    
+    const transaction = db.transaction(() => {
+      const result = db.prepare("UPDATE sellRequests SET status = ? WHERE id = ?").run(status, id);
+      
+      if (result.changes === 0) {
+        throw new Error("Sell request not found");
+      }
+
+      if (status === 'Approved') {
+        const request = db.prepare("SELECT * FROM sellRequests WHERE id = ?").get(id) as any;
+        if (request) {
+          // Create a product from the approved sell request
+          db.prepare(`
+            INSERT OR REPLACE INTO products (id, name, price, category, image, condition, description, specs, stock, isFeatured)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(
+            `p-${request.id}`,
+            request.deviceName,
+            request.estimatedPrice,
+            request.category,
+            request.image || 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&q=80&w=800',
+            request.condition,
+            `Certified pre-owned ${request.deviceName} in ${request.condition} condition. Verified by our experts.`,
+            null,
+            1,
+            0
+          );
+        }
+      }
+    });
+
+    try {
+      transaction();
+      res.json({ status: "ok" });
+    } catch (error: any) {
+      if (error.message === "Sell request not found") {
+        res.status(404).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: error.message });
+      }
+    }
   });
 
   // Vite middleware for development

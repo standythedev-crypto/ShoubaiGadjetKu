@@ -79,19 +79,27 @@ export default function Admin() {
 
   const handleApproveSell = async (id: string) => {
     try {
+      // Optimistic update
+      setSellRequests(prev => prev.map(req => req.id === id ? { ...req, status: 'Approved' } : req));
       await api.updateSellRequestStatus(id, 'Approved');
-      loadData();
+      await loadData();
     } catch (error) {
       console.error("Error approving request:", error);
+      // Revert on error
+      loadData();
     }
   };
 
   const handleRejectSell = async (id: string) => {
     try {
+      // Optimistic update
+      setSellRequests(prev => prev.map(req => req.id === id ? { ...req, status: 'Rejected' } : req));
       await api.updateSellRequestStatus(id, 'Rejected');
-      loadData();
+      await loadData();
     } catch (error) {
       console.error("Error rejecting request:", error);
+      // Revert on error
+      loadData();
     }
   };
 
