@@ -38,9 +38,11 @@ export default function Navbar({ cartCount, onCartClick, onSearch }: NavbarProps
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center gap-8">
-            <Link to="/" className="text-sm font-medium text-gray-600 hover:text-black transition-colors">iPhone</Link>
-            <Link to="/" className="text-sm font-medium text-gray-600 hover:text-black transition-colors">iPad</Link>
-            <Link to="/" className="text-sm font-medium text-gray-600 hover:text-black transition-colors">MacBook</Link>
+            <Link to="/" className="text-sm font-medium text-gray-600 hover:text-black transition-colors">Home</Link>
+            <Link to="/?category=iPhone" className="text-sm font-medium text-gray-600 hover:text-black transition-colors">iPhone</Link>
+            <Link to="/?category=iPad" className="text-sm font-medium text-gray-600 hover:text-black transition-colors">iPad</Link>
+            <Link to="/?category=MacBook" className="text-sm font-medium text-gray-600 hover:text-black transition-colors">MacBook</Link>
+            <Link to="/sell" className="text-sm font-medium text-gray-600 hover:text-black transition-colors">Sell Device</Link>
             <Link to="/assistant" className="text-sm font-bold text-emerald-600 hover:text-emerald-700 transition-colors flex items-center gap-1.5">
               <Sparkles className="w-4 h-4" />
               Gadget Assistant
@@ -88,9 +90,9 @@ export default function Navbar({ cartCount, onCartClick, onSearch }: NavbarProps
                 </span>
               )}
             </button>
-            <button className="hidden sm:block p-2 text-gray-500 hover:text-black transition-colors">
+            <Link to="/login" className="p-2 text-gray-500 hover:text-black transition-colors">
               <User className="w-5 h-5" />
-            </button>
+            </Link>
             <button 
               className="lg:hidden p-2 text-gray-500 hover:text-black transition-colors"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -122,13 +124,21 @@ export default function Navbar({ cartCount, onCartClick, onSearch }: NavbarProps
       {isMenuOpen && (
         <div className="lg:hidden bg-white border-b border-gray-100 animate-in slide-in-from-top duration-300">
           <div className="px-4 pt-2 pb-6 space-y-1">
-            <Link to="/" className="block px-3 py-2 text-base font-medium text-gray-600 hover:text-black hover:bg-gray-50 rounded-md">iPhone</Link>
-            <Link to="/" className="block px-3 py-2 text-base font-medium text-gray-600 hover:text-black hover:bg-gray-50 rounded-md">iPad</Link>
-            <Link to="/" className="block px-3 py-2 text-base font-medium text-gray-600 hover:text-black hover:bg-gray-50 rounded-md">MacBook</Link>
-            <Link to="/assistant" className="block px-3 py-2 text-base font-bold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-md flex items-center gap-2">
+            <Link to="/" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 text-base font-medium text-gray-600 hover:text-black hover:bg-gray-50 rounded-md">Home</Link>
+            <Link to="/?category=iPhone" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 text-base font-medium text-gray-600 hover:text-black hover:bg-gray-50 rounded-md">iPhone</Link>
+            <Link to="/?category=iPad" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 text-base font-medium text-gray-600 hover:text-black hover:bg-gray-50 rounded-md">iPad</Link>
+            <Link to="/?category=MacBook" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 text-base font-medium text-gray-600 hover:text-black hover:bg-gray-50 rounded-md">MacBook</Link>
+            <Link to="/sell" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 text-base font-medium text-gray-600 hover:text-black hover:bg-gray-50 rounded-md">Sell Device</Link>
+            <Link to="/assistant" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 text-base font-bold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-md flex items-center gap-2">
               <Sparkles className="w-4 h-4" />
               Gadget Assistant
             </Link>
+            <div className="pt-4 mt-4 border-t border-gray-100">
+              <Link to="/login" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 text-base font-medium text-gray-400 hover:text-emerald-600 rounded-md flex items-center gap-2">
+                <User className="w-4 h-4" />
+                Admin Portal
+              </Link>
+            </div>
           </div>
         </div>
       )}

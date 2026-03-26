@@ -1,5 +1,5 @@
 {
   "name": "ShoubaiGadjetKu.co",
-  "description": "A premium e-commerce platform for high-quality gadgets and Apple products, inspired by CompAsia.",
+  "description": "A premium e-commerce platform for gadgets, now with local SQLite database support for offline-ready development.",
   "requestFramePermissions": []
 }

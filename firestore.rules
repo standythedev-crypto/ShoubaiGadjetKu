@@ -1,0 +1,141 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId}
+    // Fields:
+    //   - uid: string (required) - The user's unique ID
+    //   - name: string (required) - The user's display name
+    //   - email: string (required) - The user's email address
+    //   - role: string (required, enum: ['admin', 'user']) - The user's role
+    //   - photoURL: string (optional) - The user's profile photo URL
+    //
+    // Collection: products
+    // Document ID: {productId}
+    // Fields:
+    //   - id: string (required) - Product ID
+    //   - name: string (required) - Product name
+    //   - category: string (required) - Product category
+    //   - price: number (required) - Product price
+    //   - originalPrice: number (optional) - Original price
+    //   - image: string (required) - Product image URL
+    //   - description: string (optional) - Product description
+    //   - condition: string (required) - Product condition
+    //   - stock: number (required) - Product stock count
+    //   - specs: map (optional) - Product specifications
+    //
+    // Collection: sellRequests
+    // Document ID: {requestId}
+    // Fields:
+    //   - id: string (required) - Request ID
+    //   - userId: string (required) - Submitting user's ID
+    //   - userName: string (required) - Submitting user's name
+    //   - deviceName: string (required) - Device name
+    //   - category: string (required) - Device category
+    //   - condition: string (required) - Device condition
+    //   - estimatedPrice: number (required) - Estimated price
+    //   - status: string (required, enum: ['Pending', 'Approved', 'Rejected']) - Request status
+    //   - createdAt: string (required, format: ISO 8601) - Creation timestamp
+    //   - image: string (optional) - Device image URL
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "standythedev@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidUrl(url) {
+      return url is string && (url.matches("^https://.*") || url.matches("^http://.*"));
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return hasRequiredFields(['uid', 'name', 'email', 'role']) &&
+             data.uid is string && data.uid.size() > 0 &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             isValidEmail(data.email) &&
+             data.role in ['admin', 'user'];
+    }
+
+    function isValidProduct(data) {
+      return hasRequiredFields(['id', 'name', 'category', 'price', 'image', 'condition', 'stock']) &&
+             data.id is string && data.id.size() > 0 &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 200 &&
+             data.category is string &&
+             data.price is number && data.price >= 0 &&
+             isValidUrl(data.image) &&
+             data.condition is string &&
+             data.stock is number && data.stock >= 0;
+    }
+
+    function isValidSellRequest(data) {
+      return hasRequiredFields(['id', 'userId', 'userName', 'deviceName', 'category', 'condition', 'estimatedPrice', 'status', 'createdAt']) &&
+             data.id is string && data.id.size() > 0 &&
+             data.userId is string && data.userId.size() > 0 &&
+             data.userName is string && data.userName.size() > 0 &&
+             data.deviceName is string && data.deviceName.size() > 0 &&
+             data.estimatedPrice is number && data.estimatedPrice >= 0 &&
+             data.status in ['Pending', 'Approved', 'Rejected'];
+    }
+
+    // ===============================================================
+    // Match Rules
+    // ===============================================================
+
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role == 'user' || isAdmin());
+      allow update: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role == resource.data.role || isAdmin());
+    }
+
+    match /sellRequests/{requestId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
+      allow create: if isAuthenticated() && isOwner(request.resource.data.userId) && isValidSellRequest(request.resource.data);
+      allow update: if isAdmin() && isValidSellRequest(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}

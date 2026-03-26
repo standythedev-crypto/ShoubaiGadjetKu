@@ -70,11 +70,11 @@ export default function Assistant() {
         ],
       });
 
-      const aiResponse = response.text || "Maaf, saya mengalami kendala teknis. Bisa ulangi pertanyaannya?";
+      const aiResponse = response.text || "Maaf, saya mengalami masalah teknikal. Sila cuba lagi.";
       setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
     } catch (error) {
       console.error("AI Error:", error);
-      setMessages(prev => [...prev, { role: 'assistant', content: "Maaf, sepertinya ada masalah koneksi. Silakan coba lagi nanti." }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: "Maaf, nampaknya ada masalah sambungan. Sila cuba sebentar lagi." }]);
     } finally {
       setIsLoading(false);
     }

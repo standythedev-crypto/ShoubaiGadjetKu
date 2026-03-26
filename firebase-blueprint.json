@@ -1,0 +1,67 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "A gadget available for sale in the store.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "price": { "type": "number" },
+        "originalPrice": { "type": "number" },
+        "image": { "type": "string" },
+        "description": { "type": "string" },
+        "condition": { "type": "string" },
+        "stock": { "type": "number" },
+        "specs": { "type": "object" }
+      },
+      "required": ["id", "name", "category", "price", "image", "condition", "stock"]
+    },
+    "SellRequest": {
+      "title": "SellRequest",
+      "description": "A request from a user to sell their device to the store.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "deviceName": { "type": "string" },
+        "category": { "type": "string" },
+        "condition": { "type": "string" },
+        "estimatedPrice": { "type": "number" },
+        "status": { "type": "string", "enum": ["Pending", "Approved", "Rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "image": { "type": "string" }
+      },
+      "required": ["id", "userId", "userName", "deviceName", "category", "condition", "estimatedPrice", "status", "createdAt"]
+    },
+    "User": {
+      "title": "User",
+      "description": "A user of the application.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "user"] },
+        "photoURL": { "type": "string" }
+      },
+      "required": ["uid", "name", "email", "role"]
+    }
+  },
+  "firestore": {
+    "products": {
+      "schema": "Product",
+      "description": "Collection of products available for sale."
+    },
+    "sellRequests": {
+      "schema": "SellRequest",
+      "description": "Collection of user sell requests."
+    },
+    "users": {
+      "schema": "User",
+      "description": "Collection of user profiles."
+    }
+  }
+}

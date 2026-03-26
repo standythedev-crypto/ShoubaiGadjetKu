@@ -16,7 +16,6 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Clock,
-  Home as HomeIcon,
   ArrowLeft
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -31,49 +30,78 @@ import {
   AreaChart,
   Area
 } from 'recharts';
-import { PRODUCTS, MOCK_SELL_REQUESTS, MOCK_SALES_DATA } from '../constants';
-import { Product, SellRequest, SaleData, User } from '../types';
+import { MOCK_SALES_DATA } from '../constants';
+import { Product, SellRequest } from '../types';
 import { cn } from '../lib/utils';
+import { useAuth } from '../AuthContext';
+import { auth, signOut } from '../firebase';
+import { api } from '../services/api';
 
 export default function Admin() {
   const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'sell-requests'>('overview');
-  const [products, setProducts] = useState<Product[]>(PRODUCTS);
-  const [sellRequests, setSellRequests] = useState<SellRequest[]>(MOCK_SELL_REQUESTS);
-  const [user, setUser] = useState<User | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [sellRequests, setSellRequests] = useState<SellRequest[]>([]);
+  const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (!storedUser) {
+    if (!authLoading && (!user || !isAdmin)) {
       navigate('/login');
-      return;
     }
-    const parsedUser = JSON.parse(storedUser);
-    if (parsedUser.role !== 'admin') {
-      navigate('/');
-      return;
+  }, [user, isAdmin, authLoading, navigate]);
+
+  const loadData = async () => {
+    if (!user || !isAdmin) return;
+    try {
+      const [productsData, requestsData] = await Promise.all([
+        api.getProducts(),
+        api.getSellRequests()
+      ]);
+      setProducts(productsData);
+      setSellRequests(requestsData);
+    } catch (error) {
+      console.error("Error loading admin data:", error);
     }
-    setUser(parsedUser);
-  }, [navigate]);
-
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    navigate('/login');
   };
 
-  const handleApproveSell = (id: string) => {
-    setSellRequests(prev => prev.map(req => 
-      req.id === id ? { ...req, status: 'Approved' } : req
-    ));
+  useEffect(() => {
+    loadData();
+  }, [user, isAdmin]);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigate('/login');
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   };
 
-  const handleRejectSell = (id: string) => {
-    setSellRequests(prev => prev.map(req => 
-      req.id === id ? { ...req, status: 'Rejected' } : req
-    ));
+  const handleApproveSell = async (id: string) => {
+    try {
+      await api.updateSellRequestStatus(id, 'Approved');
+      loadData();
+    } catch (error) {
+      console.error("Error approving request:", error);
+    }
   };
 
-  if (!user) return null;
+  const handleRejectSell = async (id: string) => {
+    try {
+      await api.updateSellRequestStatus(id, 'Rejected');
+      loadData();
+    } catch (error) {
+      console.error("Error rejecting request:", error);
+    }
+  };
+
+  if (authLoading || !user || !isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#FBFBFD]">
+        <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#FBFBFD] flex">
@@ -137,9 +165,13 @@ export default function Admin() {
 
         <div className="p-4 border-t border-gray-100">
           <div className="flex items-center gap-3 px-4 py-3 mb-4">
-            <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 font-bold text-xs">
-              {user.name.charAt(0)}
-            </div>
+            {user.photoURL ? (
+              <img src={user.photoURL} alt={user.name} className="w-8 h-8 rounded-full shadow-sm" referrerPolicy="no-referrer" />
+            ) : (
+              <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 font-bold text-xs">
+                {user.name.charAt(0)}
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <p className="text-xs font-bold text-gray-900 truncate">{user.name}</p>
               <p className="text-[10px] text-gray-500 truncate">{user.email}</p>
@@ -211,8 +243,8 @@ export default function Admin() {
                 />
                 <StatCard 
                   title="Sell Requests" 
-                  value="12 Pending" 
-                  change="+4 new" 
+                  value={`${sellRequests.filter(r => r.status === 'Pending').length} Pending`} 
+                  change={`+${sellRequests.filter(r => r.status === 'Pending').length} new`} 
                   isPositive={true} 
                   icon={<CheckCircle className="w-5 h-5" />} 
                 />

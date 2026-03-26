@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { PRODUCTS } from '../constants';
 import { Product, CartItem } from '../types';
 import Navbar from '../components/Navbar';
@@ -8,12 +8,54 @@ import Cart from '../components/Cart';
 import { Smartphone, Laptop, Tablet, Watch, Headphones, ChevronRight, Filter, ArrowUpDown, Search, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '../lib/utils';
+import { api } from '../services/api';
 
 export default function Home() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [activeCategory, setActiveCategory] = useState('All');
+  const [activeCategory, setActiveCategory] = useState(searchParams.get('category') || 'All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const category = searchParams.get('category');
+    if (category) {
+      setActiveCategory(category);
+    } else {
+      setActiveCategory('All');
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        let data = await api.getProducts();
+        if (data.length === 0) {
+          console.log("Seeding initial products to local database...");
+          await api.seedProducts(PRODUCTS);
+          data = await api.getProducts();
+        }
+        setProducts(data);
+      } catch (error) {
+        console.error("Error loading products:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProducts();
+  }, []);
+
+  const handleCategoryChange = (category: string) => {
+    if (category === 'All') {
+      searchParams.delete('category');
+    } else {
+      searchParams.set('category', category);
+    }
+    setSearchParams(searchParams);
+  };
 
   const categories = [
     { name: 'All', icon: <Smartphone className="w-4 h-4" /> },
@@ -24,7 +66,7 @@ export default function Home() {
     { name: 'Audio', icon: <Headphones className="w-4 h-4" /> },
   ];
 
-  const filteredProducts = PRODUCTS.filter(p => {
+  const filteredProducts = products.filter(p => {
     const matchesCategory = activeCategory === 'All' || p.category === activeCategory;
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                          p.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -113,7 +155,10 @@ export default function Home() {
                 transition={{ delay: 0.3 }}
                 className="flex flex-wrap items-center gap-4 justify-center md:justify-start"
               >
-                <button className="px-8 py-4 bg-black text-white rounded-2xl font-bold hover:bg-emerald-600 transition-all shadow-xl shadow-black/10 flex items-center gap-2">
+                <button 
+                  onClick={() => document.getElementById('shop')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="px-8 py-4 bg-black text-white rounded-2xl font-bold hover:bg-emerald-600 transition-all shadow-xl shadow-black/10 flex items-center gap-2"
+                >
                   Shop Now <ChevronRight className="w-4 h-4" />
                 </button>
                 <Link to="/sell" className="px-8 py-4 bg-white text-black border border-gray-200 rounded-2xl font-bold hover:bg-gray-50 transition-all">
@@ -129,7 +174,7 @@ export default function Home() {
             >
               <div className="relative z-10 rounded-3xl overflow-hidden shadow-2xl shadow-black/20">
                 <img 
-                  src="https://picsum.photos/seed/gadgets/800/600" 
+                  src="https://images.unsplash.com/photo-1491933382434-500287f9b54b?auto=format&fit=crop&q=80&w=1200" 
                   alt="Hero Gadgets" 
                   className="w-full h-auto"
                   referrerPolicy="no-referrer"
@@ -143,14 +188,14 @@ export default function Home() {
       </section>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <main id="shop" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Category Filter */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
           <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
             {categories.map((cat) => (
               <button
                 key={cat.name}
-                onClick={() => setActiveCategory(cat.name)}
+                onClick={() => handleCategoryChange(cat.name)}
                 className={cn(
                   "flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap",
                   activeCategory === cat.name 
@@ -169,7 +214,7 @@ export default function Home() {
               <Filter className="w-4 h-4" />
               Filter
             </button>
-            <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-100 rounded-xl text-sm font-semibold text-gray-600 hover:border-gray-300 transition-all">
+            <button className="button flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-100 rounded-xl text-sm font-semibold text-gray-600 hover:border-gray-300 transition-all">
               <ArrowUpDown className="w-4 h-4" />
               Sort By
             </button>
@@ -177,7 +222,17 @@ export default function Home() {
         </div>
 
         {/* Product Grid */}
-        {filteredProducts.length > 0 ? (
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="bg-white rounded-3xl border border-gray-100 p-4 animate-pulse">
+                <div className="aspect-square bg-gray-100 rounded-2xl mb-4"></div>
+                <div className="h-4 bg-gray-100 rounded w-3/4 mb-2"></div>
+                <div className="h-4 bg-gray-100 rounded w-1/2"></div>
+              </div>
+            ))}
+          </div>
+        ) : filteredProducts.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredProducts.map((product) => (
               <ProductCard 
@@ -195,7 +250,7 @@ export default function Home() {
             <h3 className="text-xl font-bold text-gray-900 mb-2">No products found</h3>
             <p className="text-gray-500">Try adjusting your search or category filters.</p>
             <button 
-              onClick={() => { setSearchQuery(''); setActiveCategory('All'); }}
+              onClick={() => { setSearchQuery(''); handleCategoryChange('All'); }}
               className="mt-6 text-emerald-600 font-bold hover:underline"
             >
               Clear all filters
@@ -237,10 +292,10 @@ export default function Home() {
             <div>
               <h4 className="font-bold text-gray-900 mb-6">Shop</h4>
               <ul className="space-y-4 text-sm text-gray-500">
-                <li><Link to="/" className="hover:text-emerald-600 transition-colors">iPhone</Link></li>
-                <li><Link to="/" className="hover:text-emerald-600 transition-colors">iPad</Link></li>
-                <li><Link to="/" className="hover:text-emerald-600 transition-colors">MacBook</Link></li>
-                <li><Link to="/" className="hover:text-emerald-600 transition-colors">Watch</Link></li>
+                <li><Link to="/?category=iPhone" className="hover:text-emerald-600 transition-colors">iPhone</Link></li>
+                <li><Link to="/?category=iPad" className="hover:text-emerald-600 transition-colors">iPad</Link></li>
+                <li><Link to="/?category=MacBook" className="hover:text-emerald-600 transition-colors">MacBook</Link></li>
+                <li><Link to="/?category=Watch" className="hover:text-emerald-600 transition-colors">Watch</Link></li>
               </ul>
             </div>
             <div>

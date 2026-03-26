@@ -4,9 +4,14 @@ import { Smartphone, Camera, DollarSign, ChevronRight, CheckCircle } from 'lucid
 import { motion } from 'framer-motion';
 import Navbar from '../components/Navbar';
 import { cn } from '../lib/utils';
+import { useAuth } from '../AuthContext';
+import { api } from '../services/api';
+import { SellRequest } from '../types';
 
 export default function Sell() {
   const [step, setStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user } = useAuth();
   const [formData, setFormData] = useState<{
     deviceName: string;
     category: string;
@@ -33,9 +38,36 @@ export default function Sell() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setStep(3); // Success step
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const newRequest: SellRequest = {
+        id: Math.random().toString(36).substr(2, 9),
+        userId: user.uid,
+        userName: user.name,
+        deviceName: formData.deviceName,
+        category: formData.category,
+        condition: formData.condition,
+        estimatedPrice: 1850, // Mock price
+        status: 'Pending',
+        createdAt: new Date().toISOString(),
+        image: formData.image || undefined,
+      };
+
+      await api.createSellRequest(newRequest);
+      setStep(3); // Success step
+    } catch (error) {
+      console.error("Error submitting sell request:", error);
+      alert("Failed to submit request. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
