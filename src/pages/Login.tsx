@@ -9,7 +9,7 @@ export default function Login() {
   const [error, setError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const navigate = useNavigate();
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, loginAsDemoAdmin } = useAuth();
 
   useEffect(() => {
     if (user) {
@@ -20,6 +20,20 @@ export default function Login() {
       }
     }
   }, [user, isAdmin, navigate]);
+
+  const handleDemoLogin = async () => {
+    setError('');
+    setIsLoggingIn(true);
+    try {
+      await loginAsDemoAdmin();
+      navigate('/admin');
+    } catch (err: any) {
+      console.error("Demo login error:", err);
+      setError('Failed to sign in as Demo Admin.');
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
 
   const handleGoogleLogin = async () => {
     setError('');
@@ -58,7 +72,25 @@ export default function Login() {
           <p className="text-gray-500">Sign in to manage ShoubaiGadjetKu</p>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-4">
+          <button 
+            onClick={handleDemoLogin}
+            disabled={isLoggingIn}
+            className="w-full py-4 bg-black text-white rounded-2xl font-bold hover:bg-gray-800 transition-all shadow-xl shadow-black/10 flex items-center justify-center gap-3 group disabled:opacity-50"
+          >
+            <LogIn className="w-5 h-5" />
+            Sign in as Demo Admin
+          </button>
+
+          <div className="relative py-4">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-100"></div>
+            </div>
+            <div className="relative flex justify-center text-[10px] uppercase tracking-widest font-bold">
+              <span className="bg-white px-4 text-gray-300">Or use Google</span>
+            </div>
+          </div>
+
           <button 
             onClick={handleGoogleLogin}
             disabled={isLoggingIn}

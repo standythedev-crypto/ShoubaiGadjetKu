@@ -1,7 +1,8 @@
-import { ShoppingCart, Search, Menu, User, Smartphone, X, Sparkles } from 'lucide-react';
+import { ShoppingCart, Search, Menu, User, Smartphone, X, Sparkles, LogOut, LayoutDashboard } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { cn } from '../lib/utils';
+import { useAuth } from '../AuthContext';
 
 interface NavbarProps {
   cartCount: number;
@@ -13,6 +14,7 @@ export default function Navbar({ cartCount, onCartClick, onSearch }: NavbarProps
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const { user, isAdmin, logout } = useAuth();
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
@@ -21,6 +23,15 @@ export default function Navbar({ cartCount, onCartClick, onSearch }: NavbarProps
 
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery, onSearch]);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      setIsMenuOpen(false);
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
 
   return (
     <nav className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-gray-100">
@@ -90,9 +101,32 @@ export default function Navbar({ cartCount, onCartClick, onSearch }: NavbarProps
                 </span>
               )}
             </button>
-            <Link to="/login" className="p-2 text-gray-500 hover:text-black transition-colors">
-              <User className="w-5 h-5" />
-            </Link>
+            
+            {user ? (
+              <div className="flex items-center gap-3">
+                {isAdmin && (
+                  <Link to="/admin" className="p-2 text-emerald-600 hover:text-emerald-700 transition-colors">
+                    <LayoutDashboard className="w-5 h-5" />
+                  </Link>
+                )}
+                <div className="hidden sm:flex flex-col items-end">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Welcome</span>
+                  <span className="text-xs font-bold text-gray-900 truncate max-w-[80px]">{user.name}</span>
+                </div>
+                <button 
+                  onClick={handleLogout}
+                  className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                  title="Logout"
+                >
+                  <LogOut className="w-5 h-5" />
+                </button>
+              </div>
+            ) : (
+              <Link to="/login" className="p-2 text-gray-500 hover:text-black transition-colors">
+                <User className="w-5 h-5" />
+              </Link>
+            )}
+
             <button 
               className="lg:hidden p-2 text-gray-500 hover:text-black transition-colors"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -134,10 +168,37 @@ export default function Navbar({ cartCount, onCartClick, onSearch }: NavbarProps
               Gadget Assistant
             </Link>
             <div className="pt-4 mt-4 border-t border-gray-100">
-              <Link to="/login" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 text-base font-medium text-gray-400 hover:text-emerald-600 rounded-md flex items-center gap-2">
-                <User className="w-4 h-4" />
-                Admin Portal
-              </Link>
+              {user ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3 px-3 py-2">
+                    <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center text-white text-xs font-bold">
+                      {user.name.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-gray-900">{user.name}</p>
+                      <p className="text-[10px] text-gray-500 uppercase tracking-widest">{user.role}</p>
+                    </div>
+                  </div>
+                  {isAdmin && (
+                    <Link to="/admin" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 text-base font-medium text-emerald-600 hover:bg-emerald-50 rounded-md flex items-center gap-2">
+                      <LayoutDashboard className="w-4 h-4" />
+                      Admin Dashboard
+                    </Link>
+                  )}
+                  <button 
+                    onClick={handleLogout}
+                    className="w-full text-left px-3 py-2 text-base font-medium text-red-500 hover:bg-red-50 rounded-md flex items-center gap-2"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </button>
+                </div>
+              ) : (
+                <Link to="/login" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 text-base font-medium text-gray-400 hover:text-emerald-600 rounded-md flex items-center gap-2">
+                  <User className="w-4 h-4" />
+                  Admin Portal
+                </Link>
+              )}
             </div>
           </div>
         </div>

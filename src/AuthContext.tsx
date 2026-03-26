@@ -7,12 +7,16 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   isAdmin: boolean;
+  loginAsDemoAdmin: () => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
   isAdmin: false,
+  loginAsDemoAdmin: async () => {},
+  logout: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -22,7 +26,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
+  const loginAsDemoAdmin = async () => {
+    setLoading(true);
+    const demoAdmin: User = {
+      uid: 'demo-admin-id',
+      name: 'Demo Admin',
+      email: 'admin@shoubaigadjetku.co',
+      role: 'admin',
+    };
+    
+    // Save/Update in SQLite
+    await api.saveUser(demoAdmin);
+    
+    setUser(demoAdmin);
+    setIsAdmin(true);
+    setLoading(false);
+    localStorage.setItem('demo_admin_session', 'true');
+  };
+
+  const logout = async () => {
+    await auth.signOut();
+    setUser(null);
+    setIsAdmin(false);
+    localStorage.removeItem('demo_admin_session');
+  };
+
   useEffect(() => {
+    // Check for demo session first
+    const isDemo = localStorage.getItem('demo_admin_session');
+    if (isDemo) {
+      loginAsDemoAdmin();
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
         try {
@@ -59,7 +95,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, isAdmin }}>
+    <AuthContext.Provider value={{ user, loading, isAdmin, loginAsDemoAdmin, logout }}>
       {children}
     </AuthContext.Provider>
   );
