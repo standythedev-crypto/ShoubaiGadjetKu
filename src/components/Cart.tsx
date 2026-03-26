@@ -72,7 +72,7 @@ export default function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemov
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
-                      <p className="text-xs text-gray-500 mb-3">{item.specs.storage || item.specs.size}</p>
+                      <p className="text-xs text-gray-500 mb-3">{item.specs?.storage || item.specs?.size || 'Standard Edition'}</p>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3 bg-gray-50 rounded-lg px-2 py-1">
                           <button 

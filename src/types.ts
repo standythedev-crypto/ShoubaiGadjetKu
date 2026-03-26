@@ -6,7 +6,7 @@ export interface Product {
   originalPrice?: number;
   image: string;
   description: string;
-  specs: {
+  specs?: {
     [key: string]: string;
   };
   condition: 'Excellent' | 'Good' | 'Fair';
