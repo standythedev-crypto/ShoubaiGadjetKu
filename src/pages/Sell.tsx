@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Smartphone, Camera, DollarSign, ChevronRight, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -18,14 +18,32 @@ export default function Sell() {
     condition: 'Excellent' | 'Good' | 'Fair';
     description: string;
     image: string | null;
+    specs: {
+      processor: string;
+      ram: string;
+      rom: string;
+      battery: string;
+    };
   }>({
     deviceName: '',
     category: 'iPhone',
     condition: 'Excellent',
     description: '',
-    image: null
+    image: null,
+    specs: {
+      processor: '',
+      ram: '',
+      rom: '',
+      battery: ''
+    }
   });
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!user) {
+      navigate('/login');
+    }
+  }, [user, navigate]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -58,6 +76,12 @@ export default function Sell() {
         status: 'Pending',
         createdAt: new Date().toISOString(),
         image: formData.image || undefined,
+        specs: {
+          processor: formData.specs.processor || undefined,
+          ram: formData.specs.ram || undefined,
+          rom: formData.specs.rom || undefined,
+          battery: formData.specs.battery || undefined,
+        }
       };
 
       await api.createSellRequest(newRequest);
@@ -72,7 +96,7 @@ export default function Sell() {
 
   return (
     <div className="min-h-screen bg-[#FBFBFD]">
-      <Navbar cartCount={0} onCartClick={() => {}} onSearch={() => {}} />
+      <Navbar onCartClick={() => {}} onSearch={() => {}} />
 
       <main className="max-w-3xl mx-auto px-4 py-20">
         <div className="text-center mb-12">
@@ -121,11 +145,60 @@ export default function Sell() {
                     onChange={(e) => setFormData({...formData, category: e.target.value})}
                   >
                     <option>iPhone</option>
+                    <option>Android</option>
                     <option>iPad</option>
                     <option>MacBook</option>
                     <option>Watch</option>
                   </select>
                 </div>
+
+                {/* Specifications Section */}
+                <div className="pt-4 border-t border-gray-100">
+                  <h3 className="text-sm font-bold text-gray-900 mb-4 uppercase tracking-wider">Technical Specifications</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1.5 ml-1">Processor</label>
+                      <input 
+                        type="text" 
+                        placeholder="e.g. A15 Bionic"
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:border-emerald-600 focus:bg-white transition-all"
+                        value={formData.specs.processor}
+                        onChange={(e) => setFormData({...formData, specs: {...formData.specs, processor: e.target.value}})}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1.5 ml-1">RAM</label>
+                      <input 
+                        type="text" 
+                        placeholder="e.g. 6GB"
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:border-emerald-600 focus:bg-white transition-all"
+                        value={formData.specs.ram}
+                        onChange={(e) => setFormData({...formData, specs: {...formData.specs, ram: e.target.value}})}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1.5 ml-1">Storage (ROM)</label>
+                      <input 
+                        type="text" 
+                        placeholder="e.g. 128GB"
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:border-emerald-600 focus:bg-white transition-all"
+                        value={formData.specs.rom}
+                        onChange={(e) => setFormData({...formData, specs: {...formData.specs, rom: e.target.value}})}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1.5 ml-1">Battery</label>
+                      <input 
+                        type="text" 
+                        placeholder="e.g. 3200 mAh"
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:border-emerald-600 focus:bg-white transition-all"
+                        value={formData.specs.battery}
+                        onChange={(e) => setFormData({...formData, specs: {...formData.specs, battery: e.target.value}})}
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">Upload Device Image</label>
                   <div className="relative group">

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { PRODUCTS } from '../constants';
 import { Product, CartItem } from '../types';
 import Navbar from '../components/Navbar';
@@ -9,10 +9,14 @@ import { Smartphone, Laptop, Tablet, Watch, Headphones, ChevronRight, Filter, Ar
 import { motion } from 'framer-motion';
 import { cn } from '../lib/utils';
 import { api } from '../services/api';
+import { useCart } from '../CartContext';
+import { useAuth } from '../AuthContext';
 
 export default function Home() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const navigate = useNavigate();
+  const { cart, addToCart, updateQuantity, removeFromCart, cartCount } = useCart();
+  const { user } = useAuth();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState(searchParams.get('category') || 'All');
   const [searchQuery, setSearchQuery] = useState('');
@@ -21,10 +25,16 @@ export default function Home() {
 
   useEffect(() => {
     const category = searchParams.get('category');
+    const search = searchParams.get('search');
+    
     if (category) {
       setActiveCategory(category);
     } else {
       setActiveCategory('All');
+    }
+
+    if (search) {
+      setSearchQuery(search);
     }
   }, [searchParams]);
 
@@ -60,6 +70,7 @@ export default function Home() {
   const categories = [
     { name: 'All', icon: <Smartphone className="w-4 h-4" /> },
     { name: 'iPhone', icon: <Smartphone className="w-4 h-4" /> },
+    { name: 'Android', icon: <Smartphone className="w-4 h-4" /> },
     { name: 'iPad', icon: <Tablet className="w-4 h-4" /> },
     { name: 'MacBook', icon: <Laptop className="w-4 h-4" /> },
     { name: 'Watch', icon: <Watch className="w-4 h-4" /> },
@@ -74,35 +85,18 @@ export default function Home() {
     return matchesCategory && matchesSearch;
   });
 
-  const addToCart = (product: Product) => {
-    setCart(prev => {
-      const existing = prev.find(item => item.id === product.id);
-      if (existing) {
-        return prev.map(item => 
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
-        );
-      }
-      return [...prev, { ...product, quantity: 1 }];
-    });
+  const handleAddToCart = (product: Product) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    addToCart(product);
     setIsCartOpen(true);
   };
-
-  const updateQuantity = (id: string, delta: number) => {
-    setCart(prev => prev.map(item => 
-      item.id === id ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item
-    ));
-  };
-
-  const removeFromCart = (id: string) => {
-    setCart(prev => prev.filter(item => item.id !== id));
-  };
-
-  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
     <div className="min-h-screen bg-[#FBFBFD]">
       <Navbar 
-        cartCount={cartCount} 
         onCartClick={() => setIsCartOpen(true)} 
         onSearch={setSearchQuery}
       />
@@ -110,9 +104,6 @@ export default function Home() {
       <Cart 
         isOpen={isCartOpen} 
         onClose={() => setIsCartOpen(false)} 
-        items={cart}
-        onUpdateQuantity={updateQuantity}
-        onRemove={removeFromCart}
       />
 
       {/* Hero Section */}
@@ -238,7 +229,7 @@ export default function Home() {
               <ProductCard 
                 key={product.id} 
                 product={product} 
-                onAddToCart={addToCart} 
+                onAddToCart={handleAddToCart} 
               />
             ))}
           </div>

@@ -9,7 +9,7 @@ export default function Login() {
   const [error, setError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const navigate = useNavigate();
-  const { user, isAdmin, loginAsDemoAdmin } = useAuth();
+  const { user, isAdmin, loginAsDemoAdmin, loginAsDemoUser } = useAuth();
 
   useEffect(() => {
     if (user) {
@@ -30,6 +30,20 @@ export default function Login() {
     } catch (err: any) {
       console.error("Demo login error:", err);
       setError('Failed to sign in as Demo Admin.');
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const handleDemoUserLogin = async () => {
+    setError('');
+    setIsLoggingIn(true);
+    try {
+      await loginAsDemoUser();
+      navigate('/');
+    } catch (err: any) {
+      console.error("Demo user login error:", err);
+      setError('Failed to sign in as Demo User.');
     } finally {
       setIsLoggingIn(false);
     }
@@ -68,8 +82,8 @@ export default function Login() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-black rounded-2xl mb-6 shadow-xl shadow-black/10">
             <Smartphone className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Portal</h1>
-          <p className="text-gray-500">Sign in to manage ShoubaiGadjetKu</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
+          <p className="text-gray-500">Sign in to ShoubaiGadjetKu</p>
         </div>
 
         <div className="space-y-4">
@@ -80,6 +94,15 @@ export default function Login() {
           >
             <LogIn className="w-5 h-5" />
             Sign in as Demo Admin
+          </button>
+
+          <button 
+            onClick={handleDemoUserLogin}
+            disabled={isLoggingIn}
+            className="w-full py-4 bg-white text-black border-2 border-black rounded-2xl font-bold hover:bg-gray-50 transition-all shadow-sm flex items-center justify-center gap-3 group disabled:opacity-50"
+          >
+            <LogIn className="w-5 h-5" />
+            Sign in as Demo User
           </button>
 
           <div className="relative py-4">

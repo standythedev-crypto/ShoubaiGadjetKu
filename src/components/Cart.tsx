@@ -1,17 +1,18 @@
 import { X, ShoppingBag, Trash2, Plus, Minus } from 'lucide-react';
-import { CartItem } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { useCart } from '../CartContext';
+import { useAuth } from '../AuthContext';
 
 interface CartProps {
   isOpen: boolean;
   onClose: () => void;
-  items: CartItem[];
-  onUpdateQuantity: (id: string, delta: number) => void;
-  onRemove: (id: string) => void;
 }
 
-export default function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemove }: CartProps) {
-  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+export default function Cart({ isOpen, onClose }: CartProps) {
+  const navigate = useNavigate();
+  const { cart: items, updateQuantity: onUpdateQuantity, removeFromCart: onRemove, cartTotal: total } = useCart();
+  const { user } = useAuth();
 
   return (
     <AnimatePresence>
@@ -112,7 +113,17 @@ export default function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemov
                   <span className="text-lg font-bold text-gray-900">Total</span>
                   <span className="text-lg font-bold text-gray-900">RM {total.toLocaleString()}</span>
                 </div>
-                <button className="w-full py-4 bg-black text-white rounded-2xl font-bold hover:bg-emerald-600 transition-all shadow-xl shadow-black/10">
+                <button 
+                  onClick={() => {
+                    onClose();
+                    if (!user) {
+                      navigate('/login');
+                    } else {
+                      navigate('/checkout');
+                    }
+                  }}
+                  className="w-full py-4 bg-black text-white rounded-2xl font-bold hover:bg-emerald-600 transition-all shadow-xl shadow-black/10"
+                >
                   Checkout Now
                 </button>
               </div>

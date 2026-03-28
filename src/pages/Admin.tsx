@@ -481,7 +481,16 @@ export default function Admin() {
                             <div className="w-10 h-10 bg-gray-50 rounded-lg overflow-hidden flex-shrink-0">
                               <img src={req.image} alt={req.deviceName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                             </div>
-                            <span className="text-sm font-medium text-gray-600">{req.deviceName}</span>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-bold text-gray-900">{req.deviceName}</span>
+                              {req.specs && (
+                                <span className="text-[10px] text-gray-500 font-medium">
+                                  {req.specs.processor && `${req.specs.processor} • `}
+                                  {req.specs.ram && `${req.specs.ram} RAM • `}
+                                  {req.specs.rom && `${req.specs.rom} ROM`}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </td>
                         <td className="px-8 py-4 text-xs text-gray-500 font-medium">

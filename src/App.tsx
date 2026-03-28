@@ -4,7 +4,12 @@ import Login from './pages/Login';
 import Admin from './pages/Admin';
 import Sell from './pages/Sell';
 import Assistant from './pages/Assistant';
+import Checkout from './pages/Checkout';
+import ProductDetail from './pages/ProductDetail';
+import Wishlist from './pages/Wishlist';
 import { AuthProvider, ErrorBoundary, useAuth } from './AuthContext';
+import { CartProvider } from './CartContext';
+import { WishlistProvider } from './WishlistContext';
 
 function AppRoutes() {
   const { loading } = useAuth();
@@ -27,6 +32,9 @@ function AppRoutes() {
       <Route path="/admin" element={<Admin />} />
       <Route path="/sell" element={<Sell />} />
       <Route path="/assistant" element={<Assistant />} />
+      <Route path="/checkout" element={<Checkout />} />
+      <Route path="/product/:id" element={<ProductDetail />} />
+      <Route path="/wishlist" element={<Wishlist />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
@@ -36,9 +44,13 @@ export default function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <Router>
-          <AppRoutes />
-        </Router>
+        <CartProvider>
+          <WishlistProvider>
+            <Router>
+              <AppRoutes />
+            </Router>
+          </WishlistProvider>
+        </CartProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

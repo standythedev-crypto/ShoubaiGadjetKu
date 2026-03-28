@@ -11,6 +11,24 @@ export interface Product {
   };
   condition: 'Excellent' | 'Good' | 'Fair';
   stock: number;
+  rating?: number;
+  reviewCount?: number;
+}
+
+export interface Review {
+  id: string;
+  productId: string;
+  userId: string;
+  userName: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+}
+
+export interface WishlistItem {
+  userId: string;
+  productId: string;
+  createdAt: string;
 }
 
 export interface CartItem extends Product {
@@ -28,6 +46,13 @@ export interface SellRequest {
   status: 'Pending' | 'Approved' | 'Rejected';
   createdAt: string;
   image?: string;
+  specs?: {
+    processor?: string;
+    ram?: string;
+    rom?: string;
+    battery?: string;
+    [key: string]: string | undefined;
+  };
 }
 
 export interface SaleData {

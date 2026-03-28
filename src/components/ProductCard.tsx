@@ -1,7 +1,11 @@
 import React from 'react';
 import { Product } from '../types';
-import { ShoppingCart, Star } from 'lucide-react';
+import { ShoppingCart, Star, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Link, useNavigate } from 'react-router-dom';
+import { cn } from '../lib/utils';
+import { useWishlist } from '../WishlistContext';
+import { useAuth } from '../AuthContext';
 
 interface ProductCardProps {
   product: Product;
@@ -9,9 +13,28 @@ interface ProductCardProps {
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
+  const isWishlisted = isInWishlist(product.id);
+
   const discount = product.originalPrice 
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
+
+  const handleWishlistToggle = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    if (isWishlisted) {
+      await removeFromWishlist(product.id);
+    } else {
+      await addToWishlist(product);
+    }
+  };
 
   return (
     <motion.div 
@@ -27,36 +50,89 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
         </div>
       )}
       
-      <div className="absolute top-4 right-4 z-10 bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">
-        {product.condition}
+      <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
+        <div className="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">
+          {product.condition}
+        </div>
+        <button
+          onClick={handleWishlistToggle}
+          className={cn(
+            "p-2 rounded-full shadow-sm transition-all duration-300",
+            isWishlisted 
+              ? "bg-red-50 text-red-500" 
+              : "bg-white text-gray-400 hover:text-red-500"
+          )}
+        >
+          <Heart className={cn("w-4 h-4", isWishlisted && "fill-current")} />
+        </button>
       </div>
 
       {/* Image */}
-      <div className="aspect-square overflow-hidden bg-gray-50">
+      <Link to={`/product/${product.id}`} className="block aspect-square overflow-hidden bg-gray-50">
         <img 
           src={product.image} 
           alt={product.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           referrerPolicy="no-referrer"
         />
-      </div>
+      </Link>
 
       {/* Content */}
       <div className="p-5">
-        <div className="flex items-center gap-1 mb-2">
-          {[...Array(5)].map((_, i) => (
-            <Star key={i} className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-          ))}
-          <span className="text-[10px] text-gray-400 ml-1">(48 reviews)</span>
-        </div>
+        <Link to={`/product/${product.id}`} className="block">
+          <div className="flex items-center gap-1 mb-2">
+            {[...Array(5)].map((_, i) => (
+              <Star 
+                key={i} 
+                className={cn(
+                  "w-3 h-3",
+                  i < Math.round(product.rating || 0) 
+                    ? "fill-yellow-400 text-yellow-400" 
+                    : "text-gray-200"
+                )} 
+              />
+            ))}
+            <span className="text-[10px] text-gray-400 ml-1">({product.reviewCount || 0} reviews)</span>
+          </div>
+          
+          <h3 className="text-sm font-semibold text-gray-900 mb-1 line-clamp-1 group-hover:text-emerald-600 transition-colors">
+            {product.name}
+          </h3>
+        </Link>
         
-        <h3 className="text-sm font-semibold text-gray-900 mb-1 line-clamp-1">
-          {product.name}
-        </h3>
-        
-        <p className="text-xs text-gray-500 mb-4 line-clamp-2 min-h-[32px]">
+        <p className="text-xs text-gray-500 mb-3 line-clamp-2 min-h-[32px]">
           {product.description}
         </p>
+
+        {/* Specs Grid */}
+        {product.specs && (
+          <div className="grid grid-cols-2 gap-y-2 gap-x-3 mb-4 border-t border-gray-50 pt-3">
+            {product.specs.processor && (
+              <div className="flex flex-col">
+                <span className="text-[9px] uppercase tracking-wider text-gray-400 font-bold">Processor</span>
+                <span className="text-[11px] text-gray-700 font-medium truncate">{product.specs.processor}</span>
+              </div>
+            )}
+            {product.specs.ram && (
+              <div className="flex flex-col">
+                <span className="text-[9px] uppercase tracking-wider text-gray-400 font-bold">RAM</span>
+                <span className="text-[11px] text-gray-700 font-medium truncate">{product.specs.ram}</span>
+              </div>
+            )}
+            {product.specs.rom && (
+              <div className="flex flex-col">
+                <span className="text-[9px] uppercase tracking-wider text-gray-400 font-bold">Storage</span>
+                <span className="text-[11px] text-gray-700 font-medium truncate">{product.specs.rom}</span>
+              </div>
+            )}
+            {product.specs.battery && (
+              <div className="flex flex-col">
+                <span className="text-[9px] uppercase tracking-wider text-gray-400 font-bold">Battery</span>
+                <span className="text-[11px] text-gray-700 font-medium truncate">{product.specs.battery}</span>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="flex items-end justify-between">
           <div>

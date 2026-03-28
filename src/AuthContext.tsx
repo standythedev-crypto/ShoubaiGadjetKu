@@ -8,6 +8,7 @@ interface AuthContextType {
   loading: boolean;
   isAdmin: boolean;
   loginAsDemoAdmin: () => Promise<void>;
+  loginAsDemoUser: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -16,6 +17,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   isAdmin: false,
   loginAsDemoAdmin: async () => {},
+  loginAsDemoUser: async () => {},
   logout: async () => {},
 });
 
@@ -44,18 +46,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('demo_admin_session', 'true');
   };
 
+  const loginAsDemoUser = async () => {
+    setLoading(true);
+    const demoUser: User = {
+      uid: 'demo-user-id',
+      name: 'Demo User',
+      email: 'user@example.com',
+      role: 'user',
+    };
+    
+    // Save/Update in SQLite
+    await api.saveUser(demoUser);
+    
+    setUser(demoUser);
+    setIsAdmin(false);
+    setLoading(false);
+    localStorage.setItem('demo_user_session', 'true');
+  };
+
   const logout = async () => {
     await auth.signOut();
     setUser(null);
     setIsAdmin(false);
     localStorage.removeItem('demo_admin_session');
+    localStorage.removeItem('demo_user_session');
   };
 
   useEffect(() => {
     // Check for demo session first
-    const isDemo = localStorage.getItem('demo_admin_session');
-    if (isDemo) {
+    const isDemoAdmin = localStorage.getItem('demo_admin_session');
+    const isDemoUser = localStorage.getItem('demo_user_session');
+    
+    if (isDemoAdmin) {
       loginAsDemoAdmin();
+      return;
+    }
+    
+    if (isDemoUser) {
+      loginAsDemoUser();
       return;
     }
 
@@ -95,7 +123,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, isAdmin, loginAsDemoAdmin, logout }}>
+    <AuthContext.Provider value={{ user, loading, isAdmin, loginAsDemoAdmin, loginAsDemoUser, logout }}>
       {children}
     </AuthContext.Provider>
   );

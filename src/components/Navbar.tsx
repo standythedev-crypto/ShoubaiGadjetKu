@@ -1,22 +1,31 @@
-import { ShoppingCart, Search, Menu, User, Smartphone, X, Sparkles, LogOut, LayoutDashboard } from 'lucide-react';
+import { ShoppingCart, Search, Menu, User, Smartphone, X, Sparkles, LogOut, LayoutDashboard, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { cn } from '../lib/utils';
 import { useAuth } from '../AuthContext';
+import { useCart } from '../CartContext';
+import { useWishlist } from '../WishlistContext';
 
 interface NavbarProps {
-  cartCount: number;
   onCartClick: () => void;
   onSearch: (query: string) => void;
 }
 
-export default function Navbar({ cartCount, onCartClick, onSearch }: NavbarProps) {
+export default function Navbar({ onCartClick, onSearch }: NavbarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { user, isAdmin, logout } = useAuth();
+  const { cartCount } = useCart();
+  const { wishlist } = useWishlist();
+  const isFirstRender = useRef(true);
 
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      if (!searchQuery) return;
+    }
+
     const delayDebounceFn = setTimeout(() => {
       onSearch(searchQuery);
     }, 300);
@@ -51,6 +60,7 @@ export default function Navbar({ cartCount, onCartClick, onSearch }: NavbarProps
           <div className="hidden lg:flex items-center gap-8">
             <Link to="/" className="text-sm font-medium text-gray-600 hover:text-black transition-colors">Home</Link>
             <Link to="/?category=iPhone" className="text-sm font-medium text-gray-600 hover:text-black transition-colors">iPhone</Link>
+            <Link to="/?category=Android" className="text-sm font-medium text-gray-600 hover:text-black transition-colors">Android</Link>
             <Link to="/?category=iPad" className="text-sm font-medium text-gray-600 hover:text-black transition-colors">iPad</Link>
             <Link to="/?category=MacBook" className="text-sm font-medium text-gray-600 hover:text-black transition-colors">MacBook</Link>
             <Link to="/sell" className="text-sm font-medium text-gray-600 hover:text-black transition-colors">Sell Device</Link>
@@ -90,6 +100,17 @@ export default function Navbar({ cartCount, onCartClick, onSearch }: NavbarProps
             >
               <Search className="w-5 h-5" />
             </button>
+            <Link 
+              to="/wishlist"
+              className="p-2 text-gray-500 hover:text-black transition-colors relative"
+            >
+              <Heart className="w-5 h-5" />
+              {wishlist.length > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center border-2 border-white">
+                  {wishlist.length}
+                </span>
+              )}
+            </Link>
             <button 
               onClick={onCartClick}
               className="p-2 text-gray-500 hover:text-black transition-colors relative"
@@ -122,8 +143,9 @@ export default function Navbar({ cartCount, onCartClick, onSearch }: NavbarProps
                 </button>
               </div>
             ) : (
-              <Link to="/login" className="p-2 text-gray-500 hover:text-black transition-colors">
-                <User className="w-5 h-5" />
+              <Link to="/login" className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-xl text-xs font-bold hover:bg-emerald-600 transition-all shadow-lg shadow-black/5">
+                <User className="w-4 h-4" />
+                Sign In
               </Link>
             )}
 
@@ -160,6 +182,7 @@ export default function Navbar({ cartCount, onCartClick, onSearch }: NavbarProps
           <div className="px-4 pt-2 pb-6 space-y-1">
             <Link to="/" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 text-base font-medium text-gray-600 hover:text-black hover:bg-gray-50 rounded-md">Home</Link>
             <Link to="/?category=iPhone" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 text-base font-medium text-gray-600 hover:text-black hover:bg-gray-50 rounded-md">iPhone</Link>
+            <Link to="/?category=Android" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 text-base font-medium text-gray-600 hover:text-black hover:bg-gray-50 rounded-md">Android</Link>
             <Link to="/?category=iPad" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 text-base font-medium text-gray-600 hover:text-black hover:bg-gray-50 rounded-md">iPad</Link>
             <Link to="/?category=MacBook" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 text-base font-medium text-gray-600 hover:text-black hover:bg-gray-50 rounded-md">MacBook</Link>
             <Link to="/sell" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 text-base font-medium text-gray-600 hover:text-black hover:bg-gray-50 rounded-md">Sell Device</Link>
@@ -185,6 +208,10 @@ export default function Navbar({ cartCount, onCartClick, onSearch }: NavbarProps
                       Admin Dashboard
                     </Link>
                   )}
+                  <Link to="/wishlist" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 text-base font-medium text-gray-600 hover:bg-gray-50 rounded-md flex items-center gap-2">
+                    <Heart className="w-4 h-4" />
+                    My Wishlist
+                  </Link>
                   <button 
                     onClick={handleLogout}
                     className="w-full text-left px-3 py-2 text-base font-medium text-red-500 hover:bg-red-50 rounded-md flex items-center gap-2"
@@ -194,10 +221,16 @@ export default function Navbar({ cartCount, onCartClick, onSearch }: NavbarProps
                   </button>
                 </div>
               ) : (
-                <Link to="/login" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 text-base font-medium text-gray-400 hover:text-emerald-600 rounded-md flex items-center gap-2">
-                  <User className="w-4 h-4" />
-                  Admin Portal
-                </Link>
+                <div className="space-y-2">
+                  <Link to="/wishlist" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 text-base font-medium text-gray-600 hover:bg-gray-50 rounded-md flex items-center gap-2">
+                    <Heart className="w-4 h-4" />
+                    My Wishlist
+                  </Link>
+                  <Link to="/login" onClick={() => setIsMenuOpen(false)} className="block px-3 py-2 text-base font-medium text-emerald-600 hover:bg-emerald-50 rounded-md flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    Sign In
+                  </Link>
+                </div>
               )}
             </div>
           </div>

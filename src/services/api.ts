@@ -1,4 +1,4 @@
-import { Product, User, SellRequest } from '../types';
+import { Product, User, SellRequest, Review } from '../types';
 
 const API_BASE = '/api';
 
@@ -55,5 +55,48 @@ export const api = {
       body: JSON.stringify({ status }),
     });
     if (!res.ok) throw new Error('Failed to update sell request status');
+  },
+
+  async getProduct(id: string): Promise<Product> {
+    const res = await fetch(`${API_BASE}/products/${id}`);
+    if (!res.ok) throw new Error('Failed to fetch product');
+    return res.json();
+  },
+
+  async getReviews(productId: string): Promise<Review[]> {
+    const res = await fetch(`${API_BASE}/reviews/${productId}`);
+    if (!res.ok) throw new Error('Failed to fetch reviews');
+    return res.json();
+  },
+
+  async createReview(review: Review): Promise<void> {
+    const res = await fetch(`${API_BASE}/reviews`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(review),
+    });
+    if (!res.ok) throw new Error('Failed to create review');
+  },
+
+  async getWishlist(userId: string): Promise<Product[]> {
+    const res = await fetch(`${API_BASE}/wishlist/${userId}`);
+    if (!res.ok) throw new Error('Failed to fetch wishlist');
+    return res.json();
+  },
+
+  async addToWishlist(userId: string, productId: string): Promise<void> {
+    const res = await fetch(`${API_BASE}/wishlist`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, productId }),
+    });
+    if (!res.ok) throw new Error('Failed to add to wishlist');
+  },
+
+  async removeFromWishlist(userId: string, productId: string): Promise<void> {
+    const res = await fetch(`${API_BASE}/wishlist/${userId}/${productId}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) throw new Error('Failed to remove from wishlist');
   },
 };
